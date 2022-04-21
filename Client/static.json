@@ -1,0 +1,5 @@
+{
+  "root": "bin/Release/net6.0/publish/wwwroot",
+  "clean_urls": true,
+  "error_page": "index.html"
+}
