@@ -6,6 +6,7 @@ namespace PutAway.Server.Data;
 
 public class ApplicationDbContext : DbContext
 {
+    private const int NumberOfItemsToGenerate = 5;
     public DbSet<Item> Items { get; set; }
     public DbSet<Image> Images { get; set; }
 
@@ -13,7 +14,18 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
+        int primaryKeyTag = 1;
+        int primaryKeyItem = 1;
+
+        for (int i = 1; i <= NumberOfItemsToGenerate; i++)
+        {
+            modelBuilder.Entity<Item>().HasData(new Item {
+                Id = primaryKeyItem,
+                Name = $"Item Name {primaryKeyItem}",
+                Description = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor."
+            });
+            primaryKeyItem++;
+        }
     }
 }
 
