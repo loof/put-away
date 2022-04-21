@@ -77,12 +77,12 @@ namespace PutAway.Server.Data
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production")
             {
                 optionsBuilder.UseNpgsql(connectionString, db => db.MigrationsAssembly(migrationsAssembly));
-                Console.WriteLine("Using Postgres");
+                Console.WriteLine("Using Postgres.");
             }
             else
             {
                 optionsBuilder.UseSqlite(connectionString, db => db.MigrationsAssembly(migrationsAssembly));
-                Console.WriteLine("Using Sqlite");
+                Console.WriteLine("Using Sqlite.");
             }
             
             DbContextOptions<TContext> options = optionsBuilder.Options;
