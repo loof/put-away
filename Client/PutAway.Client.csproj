@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Shared\PutAway.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\sample-data\weather.json" />
+  </ItemGroup>
+
 </Project>
