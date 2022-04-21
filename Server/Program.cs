@@ -10,7 +10,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: myAllowSpecificOrigins,
         policy  =>
         {
-            policy.WithOrigins("https://localhost:7172", "http://localhost:5222", "https://put-away.herokuapp.com");
+            policy.WithOrigins("https://localhost:5001", "https://put-away.herokuapp.com");
         });
 });
 // Add services to the container.
