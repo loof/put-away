@@ -9,6 +9,7 @@ public class ApplicationDbContext : DbContext
     private const int NumberOfItemsToGenerate = 5;
     public DbSet<Item> Items { get; set; }
     public DbSet<Image> Images { get; set; }
+    public DbSet<User> Users { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 

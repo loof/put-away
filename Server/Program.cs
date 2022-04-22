@@ -23,26 +23,36 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddAuthentication().AddGoogle(googleOptions =>
-{
+{ 
     googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
     googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 });
 
-if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production")
+var IsDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+
+if (IsDevelopment)
 {
     builder.Services.AddDbContext<ApplicationDbContext>(
-        options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))); 
+    
 }
 else
 {
+    string connectionUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    var databaseUri = new Uri(connectionUrl);
+    string db = databaseUri.LocalPath.TrimStart('/');
+    string[] userInfo = databaseUri.UserInfo.Split(':', StringSplitOptions.RemoveEmptyEntries);
+
+    var connectionString =
+        $"User ID={userInfo[0]};Password={userInfo[1]};Host={databaseUri.Host};Port={databaseUri.Port};Database={db};Pooling=true;SSL Mode=Require;Trust Server Certificate=True;";
     builder.Services.AddDbContext<ApplicationDbContext>(
-        options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));   
+        options => options.UseNpgsql(connectionString));
 }
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (IsDevelopment)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
