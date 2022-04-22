@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using PutAway.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,10 +11,7 @@ var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: myAllowSpecificOrigins,
-        policy  =>
-        {
-            policy.WithOrigins("https://localhost:5001", "https://put-away.herokuapp.com");
-        });
+        policy => { policy.WithOrigins("https://localhost:5001", "https://put-away.herokuapp.com"); });
 });
 // Add services to the container.
 builder.Services.AddControllers();
@@ -21,20 +20,22 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddAuthentication().AddGoogle(googleOptions =>
-{ 
-    googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-    googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-});
+//builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services
+    .AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; })
+    .AddCookie()
+    .AddGoogle(googleOptions =>
+    {
+        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    });
 
 var IsDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
 
 if (IsDevelopment)
 {
     builder.Services.AddDbContext<ApplicationDbContext>(
-        options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))); 
-    
+        options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 else
 {

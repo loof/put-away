@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PutAway.Server.Data;
@@ -8,13 +9,14 @@ using PutAway.Shared.Entities;
 
 namespace PutAway.Server.Controllers;
 
+[AllowAnonymous]
 [Route("[controller]")]
 [ApiController]
-public class UserController : ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
-    public UserController(ApplicationDbContext context)
+    public UsersController(ApplicationDbContext context)
     {
         _context = context;
     }
@@ -22,7 +24,7 @@ public class UserController : ControllerBase
     [HttpGet("GoogleSignIn")]
     public async Task GoogleSignIn()
     {
-        HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme,
+        await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme,
             new AuthenticationProperties {RedirectUri = "/api/items"});
     }
 
