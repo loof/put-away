@@ -23,7 +23,10 @@ builder.Services.AddSwaggerGen();
 //builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services
     .AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; })
-    .AddCookie()
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/users/GoogleSignIn";
+    })
     .AddGoogle(googleOptions =>
     {
         googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
