@@ -21,17 +21,17 @@ builder.Services.AddSwaggerGen();
 
 
 //builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services
-    .AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; })
-    .AddCookie(options =>
+/*builder.Services
+    .AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; })*/
+    /*.AddCookie(options =>
     {
         options.LoginPath = "/users/GoogleSignIn";
-    })
-    .AddGoogle(googleOptions =>
+    })*/
+    /*.AddGoogle(googleOptions =>
     {
         googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
         googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-    });
+    });*/
 
 var IsDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
 

@@ -49,6 +49,4 @@ public class UsersController : ControllerBase
 
         return await Task.FromResult(currentUser);
     }
-    
-    
 }
