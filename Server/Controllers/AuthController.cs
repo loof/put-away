@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
         if (user != null)
         {
-            BadRequest("User already exists");
+            return BadRequest("User already exists");
         }
 
         user = new User();
@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
         var user = _context.Users.FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
         if (user == null || !VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
         {
-            return BadRequest("Wrong email of password");
+            return BadRequest("Wrong email or password");
         }
 
         string token = CreateToken(user);

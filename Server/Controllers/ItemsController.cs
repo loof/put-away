@@ -25,7 +25,7 @@ namespace PutAway.Server.Controllers
         }
 
         // GET: api/Items
-        [HttpGet]
+        [HttpGet, Authorize]
         public async Task<ActionResult<IEnumerable<Item>>> GetItems()
         {
             return await _context.Items.ToListAsync();
