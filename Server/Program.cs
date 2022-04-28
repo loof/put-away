@@ -28,11 +28,13 @@ builder.Services.AddSwaggerGen(options =>
     {
         Description = "Standard Authorisation header using Bearer scheme (\"bearer {token}\")",
         In = ParameterLocation.Header,
-        Name = "Authorisation",
+        Name = "Authorization",
         Type = SecuritySchemeType.ApiKey
     });
     
     options.OperationFilter<SecurityRequirementsOperationFilter>();
+    
+   
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -79,11 +81,9 @@ else
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (IsDevelopment)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

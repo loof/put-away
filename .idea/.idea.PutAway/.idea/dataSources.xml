@@ -8,11 +8,11 @@
       <jdbc-url>jdbc:postgresql://ec2-52-18-116-67.eu-west-1.compute.amazonaws.com:5432/d67mmp2ighka29</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="Items" uuid="f75708c8-811d-48f6-80af-d2db07e9f6f4">
+    <data-source source="LOCAL" name="Items" uuid="e68d419d-cce2-4f99-859c-31514a717504">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:C:\DEV\www\put-away\Server\Items.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:C:\DEV\web\put-away\Server\Items.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
       <libraries>
         <library>
