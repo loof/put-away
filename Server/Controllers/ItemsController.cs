@@ -1,8 +1,5 @@
 #nullable disable
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,9 +9,9 @@ using PutAway.Shared.Entities;
 
 namespace PutAway.Server.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class ItemsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -25,7 +22,7 @@ namespace PutAway.Server.Controllers
         }
 
         // GET: api/Items
-        [HttpGet, Authorize]
+        [HttpGet]
         public async Task<ActionResult<IEnumerable<Item>>> GetItems()
         {
             return await _context.Items.ToListAsync();

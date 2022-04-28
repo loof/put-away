@@ -40,6 +40,7 @@ public class AuthController : ControllerBase
         user.EmailAddress = request.EmailAddress;
         user.PasswordHash = passwordHash;
         user.PasswordSalt = passwordSalt;
+        
 
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
@@ -65,7 +66,8 @@ public class AuthController : ControllerBase
     {
         List<Claim> claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Email, user.EmailAddress)
+            new (ClaimTypes.Email, user.EmailAddress),
+            new (ClaimTypes.Role, user.Role)
         };
 
         var key = new SymmetricSecurityKey(
