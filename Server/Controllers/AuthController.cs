@@ -17,6 +17,7 @@ public class AuthController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
+    private const string DefaultUserRoleName = "User";
 
     public AuthController(ApplicationDbContext context, IConfiguration configuration)
     {
@@ -40,8 +41,17 @@ public class AuthController : ControllerBase
         user.EmailAddress = request.EmailAddress;
         user.PasswordHash = passwordHash;
         user.PasswordSalt = passwordSalt;
-        
 
+        Role role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == DefaultUserRoleName);
+        if (role != null)
+        {
+            user.Roles.Add(role);
+        }
+        else
+        {
+            user.Roles.Add(new Role {Name = DefaultUserRoleName});
+        }
+        
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -51,7 +61,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<string>> Login(UserDto request)
     {
-        var user = _context.Users.FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
+        var user = _context.Users.Include(u => u.Roles).FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
         if (user == null || !VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
         {
             return BadRequest("Wrong email or password");
@@ -66,9 +76,13 @@ public class AuthController : ControllerBase
     {
         List<Claim> claims = new List<Claim>
         {
-            new (ClaimTypes.Email, user.EmailAddress),
-            new (ClaimTypes.Role, user.Role)
+            new (ClaimTypes.Email, user.EmailAddress)
         };
+
+        foreach (Role userRole in user.Roles)
+        {
+            claims.Add(new (ClaimTypes.Role, userRole.Name));
+        }
 
         var key = new SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes(_configuration.GetSection("Authentication:JWT:Token").Value));

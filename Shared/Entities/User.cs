@@ -8,13 +8,12 @@ public class User
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
-    
-    [Required(AllowEmptyStrings = false)]
-    public string EmailAddress { get; set; }
+
+    [Required(AllowEmptyStrings = false)] public string EmailAddress { get; set; }
 
     public byte[] PasswordHash { get; set; }
 
     public byte[] PasswordSalt { get; set; }
 
-    public string Role { get; set; } = "User";
+    public ISet<Role> Roles { get; set; } = new HashSet<Role>();
 }

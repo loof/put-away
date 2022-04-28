@@ -8,8 +8,9 @@ public class ApplicationDbContext : DbContext
 {
     private const int NumberOfItemsToGenerate = 5;
     public DbSet<Item> Items { get; set; }
-    public DbSet<Image> Images { get; set; }
-    public DbSet<PutAway.Shared.Entities.User> Users { get; set; }
+    public DbSet<Image> Images { get; set; } 
+    public DbSet<User> Users { get; set; }
+    public DbSet<Role> Roles { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -17,6 +18,10 @@ public class ApplicationDbContext : DbContext
     {
         modelBuilder.Entity<User>()
             .HasIndex(u => u.EmailAddress)
+            .IsUnique();
+        
+        modelBuilder.Entity<Role>()
+            .HasIndex(u => u.Name)
             .IsUnique();
 
         
