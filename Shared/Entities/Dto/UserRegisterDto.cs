@@ -2,11 +2,12 @@
 
 namespace PutAway.Shared.Entities.Dto;
 
-public class UserDto
+public class UserRegisterDto
 {
     [Required]
-    public int Id { get; set; }
+    public string EmailAddress { get; set; }
     
     [Required]
-    public string EmailAddress { get; set; }
+    public string Password { get; set; }
+    
 }

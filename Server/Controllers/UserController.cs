@@ -1,32 +1,70 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using PutAway.Server.Data;
 using PutAway.Shared.Entities;
+
+using System.IdentityModel.Tokens.Jwt;
+
+using System.Security.Cryptography;
+
+
+using Microsoft.IdentityModel.Tokens;
 using PutAway.Shared.Entities.Dto;
+
 
 namespace PutAway.Server.Controllers;
 
-
+[AllowAnonymous]
 [Route("[controller]")]
 [ApiController]
-public class AuthController : ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
     private const string DefaultUserRoleName = "User";
 
-    public AuthController(ApplicationDbContext context, IConfiguration configuration)
+    public UsersController(ApplicationDbContext context, IConfiguration configuration)
     {
         _context = context;
         _configuration = configuration;
     }
     
+    [HttpGet("GoogleSignIn")]
+    public async Task GoogleSignIn()
+    {
+        await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme,
+            new AuthenticationProperties {RedirectUri = "/api/items"});
+    }
+
+    [HttpGet("getcurrentuser")]
+    public async Task<ActionResult<User>> GetCurrentUser()
+    {
+        User currentUser = new User();
+        
+        if (User.Identity.IsAuthenticated)
+        {
+            currentUser.EmailAddress = User.FindFirstValue(ClaimTypes.Email);
+            currentUser = await _context.Users.Where(u => u.EmailAddress == currentUser.EmailAddress).FirstOrDefaultAsync();
+
+            if (currentUser == null)
+            {
+                currentUser = new User();
+                currentUser.EmailAddress = User.FindFirstValue(ClaimTypes.Email);
+                _context.Users.Add(currentUser);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        return await Task.FromResult(currentUser);
+    }
+    
     [HttpPost("register")]
-    public async Task<ActionResult<User>> Register(UserDto request)
+    [AllowAnonymous]
+    public async Task<ActionResult<User>> Register(UserRegisterDto request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
         if (user != null)
@@ -55,11 +93,12 @@ public class AuthController : ControllerBase
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
-        return Ok(user);
+        return Ok(new UserDto{Id = user.Id, EmailAddress = user.EmailAddress});
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<string>> Login(UserDto request)
+    [AllowAnonymous]
+    public async Task<ActionResult<string>> Login(UserLoginDto request)
     {
         var user = _context.Users.Include(u => u.Roles).FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
         if (user == null || !VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
@@ -71,6 +110,8 @@ public class AuthController : ControllerBase
         
         return Ok(token);
     }
+
+    #region Private Methods
 
     private string CreateToken(User user)
     {
@@ -114,5 +155,5 @@ public class AuthController : ControllerBase
         }
     }
 
-
+    #endregion
 }
