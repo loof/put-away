@@ -16,4 +16,6 @@ public class User
     public byte[] PasswordSalt { get; set; }
 
     public ISet<Role> Roles { get; set; } = new HashSet<Role>();
+
+    public ISet<UserRefreshToken> UserRefreshTokens { get; set; }
 }

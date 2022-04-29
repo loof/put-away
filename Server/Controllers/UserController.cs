@@ -6,15 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PutAway.Server.Data;
 using PutAway.Shared.Entities;
-
 using System.IdentityModel.Tokens.Jwt;
-
 using System.Security.Cryptography;
-
-
 using Microsoft.IdentityModel.Tokens;
+using PutAway.Server.Services;
+using PutAway.Server.Services.Jwt;
 using PutAway.Shared.Entities.Dto;
-
 
 namespace PutAway.Server.Controllers;
 
@@ -23,32 +20,47 @@ namespace PutAway.Server.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
+    #region Private Fields
+
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
-    private const string DefaultUserRoleName = "User";
+    private readonly IUserService _userService;
+    private readonly IJwtService _jwtService;
+    private const int RefreshTokenTimeoutSeconds = 5;
 
-    public UsersController(ApplicationDbContext context, IConfiguration configuration)
+    #endregion
+
+    #region Constructor
+
+    public UsersController(ApplicationDbContext context, IConfiguration configuration, IUserService userService, IJwtService jwtService)
     {
         _context = context;
         _configuration = configuration;
+        _userService = userService;
+        _jwtService = jwtService;
     }
-    
-    [HttpGet("GoogleSignIn")]
+
+    #endregion
+
+    #region Public Methods
+
+    [HttpGet("google-signin")]
     public async Task GoogleSignIn()
     {
         await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme,
             new AuthenticationProperties {RedirectUri = "/api/items"});
     }
 
-    [HttpGet("getcurrentuser")]
+    [HttpGet("get-current-user")]
     public async Task<ActionResult<User>> GetCurrentUser()
     {
         User currentUser = new User();
-        
+
         if (User.Identity.IsAuthenticated)
         {
             currentUser.EmailAddress = User.FindFirstValue(ClaimTypes.Email);
-            currentUser = await _context.Users.Where(u => u.EmailAddress == currentUser.EmailAddress).FirstOrDefaultAsync();
+            currentUser = await _context.Users.Where(u => u.EmailAddress == currentUser.EmailAddress)
+                .FirstOrDefaultAsync();
 
             if (currentUser == null)
             {
@@ -61,99 +73,137 @@ public class UsersController : ControllerBase
 
         return await Task.FromResult(currentUser);
     }
-    
+
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<ActionResult<User>> Register(UserRegisterDto request)
+    public async Task<ActionResult<User>> Register(UserRegisterRequestDto request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
         if (user != null)
         {
-            return BadRequest("User already exists");
+            return BadRequest("User already exists.");
         }
 
-        user = new User();
-        
-        CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
+        _userService.CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
-        user.EmailAddress = request.EmailAddress;
-        user.PasswordHash = passwordHash;
-        user.PasswordSalt = passwordSalt;
-
-        Role role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == DefaultUserRoleName);
-        if (role != null)
+        user = new User
         {
-            user.Roles.Add(role);
-        }
-        else
-        {
-            user.Roles.Add(new Role {Name = DefaultUserRoleName});
-        }
-        
+            EmailAddress = request.EmailAddress,
+            PasswordHash = passwordHash,
+            PasswordSalt = passwordSalt
+        };
+
+        await _userService.AssignDefaultRole(user);
+
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
-        return Ok(new UserDto{Id = user.Id, EmailAddress = user.EmailAddress});
+        return Ok(new UserRegisterResponseDto {EmailAddress = user.EmailAddress});
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<ActionResult<string>> Login(UserLoginDto request)
+    public async Task<ActionResult<string>> Login(UserLoginRequestDto request)
     {
-        var user = _context.Users.Include(u => u.Roles).FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
-        if (user == null || !VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
+        if (!ModelState.IsValid)
         {
-            return BadRequest("Wrong email or password");
+            return BadRequest(new UserLoginResponseDto
+            {
+                IsSuccess = false,
+                Reason = "Email and password must be provided."
+            });
         }
 
-        string token = CreateToken(user);
-        
-        return Ok(token);
-    }
-
-    #region Private Methods
-
-    private string CreateToken(User user)
-    {
-        List<Claim> claims = new List<Claim>
+        var user = _context.Users.Include(u => u.Roles).FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
+        if (user == null || !_userService.VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
         {
-            new (ClaimTypes.Email, user.EmailAddress)
+            return BadRequest("Wrong email or password.");
+        }
+
+        string token = _jwtService.CreateToken(user);
+        string refreshTokenString = _jwtService.GenerateRefreshTokenString();
+        string ipAddress = HttpContext.Connection.RemoteIpAddress.ToString();
+        var userRefreshToken = new UserRefreshToken
+        {
+            CreatedDate = DateTime.UtcNow,
+            ExpirationDate = DateTime.UtcNow.AddMinutes(RefreshTokenTimeoutSeconds),
+            IpAddress = ipAddress,
+            IsInvalidated = false,
+            RefreshToken = refreshTokenString,
+            Token = token,
+            User = user
         };
 
-        foreach (Role userRole in user.Roles)
+        await _context.UserRefreshTokens.AddAsync(userRefreshToken);
+        await _context.SaveChangesAsync();
+
+        return Ok(new UserLoginResponseDto
         {
-            claims.Add(new (ClaimTypes.Role, userRole.Name));
-        }
-
-        var key = new SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes(_configuration.GetSection("Authentication:JWT:Token").Value));
-
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-
-        var token = new JwtSecurityToken(claims: claims, expires: DateTime.Now.AddDays(1), signingCredentials: creds);
-
-        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return jwt;
+            Token = token,
+            RefreshToken = refreshTokenString,
+            IsSuccess = true
+        });
     }
 
-    private bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
+    [HttpGet("refresh-token")]
+    public async Task<IActionResult> RefreshToken(RefreshTokenRequestDto request)
     {
-        using (var hmac = new HMACSHA512(passwordSalt))
+        if (!ModelState.IsValid)
         {
-            var computeHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-            return computeHash.SequenceEqual(passwordHash);
+            return BadRequest(new UserLoginResponseDto
+            {
+                IsSuccess = false,
+                Reason = "Tokens must be provided."
+            });
         }
+
+        var token = _jwtService.GetJwtToken(request.ExpiredToken);
+        var userRefreshToken = _context.UserRefreshTokens.FirstOrDefault(
+            urt =>
+                urt.IsInvalidated == false && urt.Token == request.ExpiredToken &&
+                urt.RefreshToken == request.RefreshToken &&
+                urt.IpAddress == HttpContext.Connection.RemoteIpAddress.ToString());
+
+        UserLoginResponseDto response = ValidateDetails(token, userRefreshToken);
+        if (!response.IsSuccess)
+        {
+            return BadRequest(response);
+        }
+
+        return Ok();
     }
 
-    private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
+    private UserLoginResponseDto ValidateDetails(JwtSecurityToken token, UserRefreshToken userRefreshToken)
     {
-        using (var hmac = new HMACSHA512())
+        if (userRefreshToken == null)
         {
-            passwordSalt = hmac.Key;
-            passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            return new UserLoginResponseDto {IsSuccess = false, Reason = "Invalid token details."};
         }
-    }
 
+        if (token.ValidTo > DateTime.UtcNow)
+        {
+            return new UserLoginResponseDto
+            {
+                IsSuccess = false,
+                Reason = "Token not expired."
+            };
+        }
+
+        if (!userRefreshToken.IsActive)
+        {
+            return new UserLoginResponseDto
+            {
+                IsSuccess = false,
+                Reason = "Refresh token expired."
+            };
+        }
+
+        return new UserLoginResponseDto
+        {
+            IsSuccess = true
+        };
+    }
+    
     #endregion
+    
 }
