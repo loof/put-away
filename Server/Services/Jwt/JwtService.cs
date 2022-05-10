@@ -13,15 +13,42 @@ public class JwtService : IJwtService
 {
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
-    private const int TokenTimeoutSeconds = 180;
-    
+    private const int TokenTimeoutSeconds = 10;
+    private const int RefreshTokenTimeoutMinutes = 2;
     public JwtService(ApplicationDbContext context, IConfiguration configuration)
     {
         _context = context;
         _configuration = configuration;
     }
+    public async Task<UserLoginResponseDto> GetRefreshTokenAsync(string ipAddress, User user)
+    {
+        var refreshToken = GenerateRefreshToken();
+        var accessToken = CreateToken(user);
+        return await SaveTokenDetails(ipAddress, user, accessToken, refreshToken);
+    }
+    public async Task<UserLoginResponseDto> GetTokenAsync(UserLoginRequestDto authRequest, string ipAddress)
+    {
+        User? user = await _context.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.EmailAddress == authRequest.EmailAddress);
+      
 
-    public string CreateToken(User user)
+        if (user == null ||
+            !VerifyPasswordHash(authRequest.Password, user.PasswordHash, user.PasswordSalt))
+        {
+            return await Task.FromResult<UserLoginResponseDto>(null);
+        }
+
+        string tokenString = CreateToken(user);
+        string refreshToken = GenerateRefreshToken();
+        return await SaveTokenDetails(ipAddress, user, tokenString, refreshToken);
+    }
+
+    public JwtSecurityToken GetJwtToken(string expiredToken)
+    {
+        JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+        return tokenHandler.ReadJwtToken(expiredToken);
+    }
+    
+    private string CreateToken(User user)
     {
         List<Claim> claims = new List<Claim>
         {
@@ -45,8 +72,17 @@ public class JwtService : IJwtService
 
         return jwt;
     }
+    private bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
+    {
+        using (var hmac = new HMACSHA512(passwordSalt))
+        {
+            var computeHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            return computeHash.SequenceEqual(passwordHash);
+        }
+    }
 
-    public string GenerateRefreshTokenString()
+
+    private string GenerateRefreshToken()
     {
         var byteArray = new byte[64];
         using (var cryproProvider = new RNGCryptoServiceProvider())
@@ -56,10 +92,21 @@ public class JwtService : IJwtService
             return Convert.ToBase64String(byteArray);
         }
     }
-    
-    public JwtSecurityToken GetJwtToken(string expiredToken)
+
+    private async Task<UserLoginResponseDto> SaveTokenDetails(string ipAddress, User user, string tokenString, string refreshToken)
     {
-        JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-        return tokenHandler.ReadJwtToken(expiredToken);
+        var userRefreshToken = new UserRefreshToken
+        {
+            CreatedDate = DateTime.UtcNow,
+            ExpirationDate = DateTime.UtcNow.AddMinutes(RefreshTokenTimeoutMinutes),
+            IpAddress = ipAddress,
+            IsInvalidated = false,
+            RefreshToken = refreshToken,
+            Token = tokenString,
+            User = user
+        };
+        await _context.UserRefreshTokens.AddAsync(userRefreshToken);
+        await _context.SaveChangesAsync();
+        return new UserLoginResponseDto() {Token = tokenString, RefreshToken = refreshToken, IsSuccess = true};
     }
 }

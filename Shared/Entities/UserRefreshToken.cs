@@ -17,7 +17,7 @@ public class UserRefreshToken
     public DateTime ExpirationDate { get; set; }
     
     [NotMapped] 
-    public bool IsActive => ExpirationDate < DateTime.UtcNow;
+    public bool IsActive => ExpirationDate > DateTime.UtcNow;
 
     public string IpAddress { get; set; }
 

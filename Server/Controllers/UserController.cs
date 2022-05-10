@@ -26,13 +26,13 @@ public class UsersController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IUserService _userService;
     private readonly IJwtService _jwtService;
-    private const int RefreshTokenTimeoutSeconds = 5;
 
     #endregion
 
     #region Constructor
 
-    public UsersController(ApplicationDbContext context, IConfiguration configuration, IUserService userService, IJwtService jwtService)
+    public UsersController(ApplicationDbContext context, IConfiguration configuration, IUserService userService,
+        IJwtService jwtService)
     {
         _context = context;
         _configuration = configuration;
@@ -78,15 +78,14 @@ public class UsersController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<User>> Register(UserRegisterRequestDto request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
-        if (user != null)
+        if (await _userService.UserExists(request.EmailAddress))
         {
             return BadRequest("User already exists.");
         }
 
         _userService.CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
-        user = new User
+        User user = new User
         {
             EmailAddress = request.EmailAddress,
             PasswordHash = passwordHash,
@@ -94,9 +93,7 @@ public class UsersController : ControllerBase
         };
 
         await _userService.AssignDefaultRole(user);
-
-        await _context.Users.AddAsync(user);
-        await _context.SaveChangesAsync();
+        await _userService.AddAndSave(user);
 
         return Ok(new UserRegisterResponseDto {EmailAddress = user.EmailAddress});
     }
@@ -106,46 +103,16 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<string>> Login(UserLoginRequestDto request)
     {
         if (!ModelState.IsValid)
-        {
             return BadRequest(new UserLoginResponseDto
-            {
-                IsSuccess = false,
-                Reason = "Email and password must be provided."
-            });
-        }
-
-        var user = _context.Users.Include(u => u.Roles).FirstOrDefault(u => u.EmailAddress == request.EmailAddress);
-        if (user == null || !_userService.VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
-        {
-            return BadRequest("Wrong email or password.");
-        }
-
-        string token = _jwtService.CreateToken(user);
-        string refreshTokenString = _jwtService.GenerateRefreshTokenString();
-        string ipAddress = HttpContext.Connection.RemoteIpAddress.ToString();
-        var userRefreshToken = new UserRefreshToken
-        {
-            CreatedDate = DateTime.UtcNow,
-            ExpirationDate = DateTime.UtcNow.AddMinutes(RefreshTokenTimeoutSeconds),
-            IpAddress = ipAddress,
-            IsInvalidated = false,
-            RefreshToken = refreshTokenString,
-            Token = token,
-            User = user
-        };
-
-        await _context.UserRefreshTokens.AddAsync(userRefreshToken);
-        await _context.SaveChangesAsync();
-
-        return Ok(new UserLoginResponseDto
-        {
-            Token = token,
-            RefreshToken = refreshTokenString,
-            IsSuccess = true
-        });
+                {IsSuccess = false, Reason = "UserName and Password must be provided."});
+        var authResponse = await _jwtService.GetTokenAsync(request, HttpContext.Connection.RemoteIpAddress.ToString());
+        if (authResponse == null)
+            return Unauthorized();
+        return Ok(authResponse);
     }
 
-    [HttpGet("refresh-token")]
+
+    [HttpPost("[action]")]
     public async Task<IActionResult> RefreshToken(RefreshTokenRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -157,12 +124,13 @@ public class UsersController : ControllerBase
             });
         }
 
+        var ipAddress = HttpContext.Connection.RemoteIpAddress.ToString();
         var token = _jwtService.GetJwtToken(request.ExpiredToken);
         var userRefreshToken = _context.UserRefreshTokens.FirstOrDefault(
             urt =>
                 urt.IsInvalidated == false && urt.Token == request.ExpiredToken &&
                 urt.RefreshToken == request.RefreshToken &&
-                urt.IpAddress == HttpContext.Connection.RemoteIpAddress.ToString());
+                urt.IpAddress == ipAddress);
 
         UserLoginResponseDto response = ValidateDetails(token, userRefreshToken);
         if (!response.IsSuccess)
@@ -170,8 +138,18 @@ public class UsersController : ControllerBase
             return BadRequest(response);
         }
 
-        return Ok();
+        userRefreshToken.IsInvalidated = true;
+        _context.UserRefreshTokens.Update(userRefreshToken);
+        await _context.SaveChangesAsync();
+
+        var userEmail = token.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email).Value;
+        var user = await _context.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.EmailAddress == userEmail);
+        
+        var authResponse = await _jwtService.GetRefreshTokenAsync(ipAddress, user); 
+
+        return Ok(authResponse);
     }
+
 
     private UserLoginResponseDto ValidateDetails(JwtSecurityToken token, UserRefreshToken userRefreshToken)
     {
@@ -203,7 +181,6 @@ public class UsersController : ControllerBase
             IsSuccess = true
         };
     }
-    
+
     #endregion
-    
 }

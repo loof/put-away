@@ -62,8 +62,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
     });*/
 
-builder.Services.AddSingleton<IUserService, UserService>();
-builder.Services.AddSingleton<IJwtService, JwtService>();
+builder.Services.AddTransient<IUserService, UserService>();
+builder.Services.AddTransient<IJwtService, JwtService>();
 
 var IsDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
 
