@@ -15,4 +15,5 @@ public class Item
     public int? YearsOfWarranty { get; set; }
     public ISet<Item> Items { get; set; } = new HashSet<Item>();
     public ISet<Image> Images { get; set; } = new HashSet<Image>();
+    public bool IsContainer { get; set; }
 }

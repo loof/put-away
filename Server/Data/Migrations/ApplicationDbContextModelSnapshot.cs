@@ -55,6 +55,9 @@ namespace PutAway.Server.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsContainer")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("ItemId")
                         .HasColumnType("INTEGER");
 
@@ -79,30 +82,35 @@ namespace PutAway.Server.Data.Migrations
                         {
                             Id = 1,
                             Description = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor.",
+                            IsContainer = false,
                             Name = "Item Name 1"
                         },
                         new
                         {
                             Id = 2,
                             Description = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor.",
+                            IsContainer = false,
                             Name = "Item Name 2"
                         },
                         new
                         {
                             Id = 3,
                             Description = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor.",
+                            IsContainer = false,
                             Name = "Item Name 3"
                         },
                         new
                         {
                             Id = 4,
                             Description = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor.",
+                            IsContainer = false,
                             Name = "Item Name 4"
                         },
                         new
                         {
                             Id = 5,
                             Description = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor.",
+                            IsContainer = false,
                             Name = "Item Name 5"
                         });
                 });
