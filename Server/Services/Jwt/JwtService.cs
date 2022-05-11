@@ -13,8 +13,8 @@ public class JwtService : IJwtService
 {
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
-    private const int TokenTimeoutSeconds = 10;
-    private const int RefreshTokenTimeoutMinutes = 2;
+    private const int TokenTimeoutMinutes = 30;
+    private const int RefreshTokenTimeoutDays = 1;
     public JwtService(ApplicationDbContext context, IConfiguration configuration)
     {
         _context = context;
@@ -47,7 +47,13 @@ public class JwtService : IJwtService
         JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
         return tokenHandler.ReadJwtToken(expiredToken);
     }
-    
+
+    public async Task<bool> IsTokenValid(string accessToken, string ipAddress)
+    {
+        var isValid = _context.UserRefreshTokens.FirstOrDefaultAsync(urt => urt.Token == accessToken && urt.IpAddress == ipAddress) != null;
+        return await Task.FromResult(isValid);
+    }
+
     private string CreateToken(User user)
     {
         List<Claim> claims = new List<Claim>
@@ -65,7 +71,7 @@ public class JwtService : IJwtService
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
-        var token = new JwtSecurityToken(claims: claims, expires: DateTime.UtcNow.AddSeconds(TokenTimeoutSeconds),
+        var token = new JwtSecurityToken(claims: claims, expires: DateTime.UtcNow.AddMinutes(TokenTimeoutMinutes),
             signingCredentials: creds);
 
         var jwt = new JwtSecurityTokenHandler().WriteToken(token);
@@ -98,7 +104,7 @@ public class JwtService : IJwtService
         var userRefreshToken = new UserRefreshToken
         {
             CreatedDate = DateTime.UtcNow,
-            ExpirationDate = DateTime.UtcNow.AddMinutes(RefreshTokenTimeoutMinutes),
+            ExpirationDate = DateTime.UtcNow.AddDays(RefreshTokenTimeoutDays),
             IpAddress = ipAddress,
             IsInvalidated = false,
             RefreshToken = refreshToken,

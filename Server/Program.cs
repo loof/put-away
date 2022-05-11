@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,6 +10,7 @@ using Microsoft.OpenApi.Models;
 using PutAway.Server.Data;
 using PutAway.Server.Services;
 using PutAway.Server.Services.Jwt;
+using SQLitePCL;
 using Swashbuckle.AspNetCore.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,34 +35,49 @@ builder.Services.AddSwaggerGen(options =>
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey
     });
-    
+
     options.OperationFilter<SecurityRequirementsOperationFilter>();
-    
-   
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
+    .AddJwtBearer(options =>
     {
-        ValidateIssuerSigningKey = true,
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value)),
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+            IssuerSigningKey =
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value)),
+        };
+        options.Events = new JwtBearerEvents();
+        options.Events.OnTokenValidated = async (context) =>
+        {
+            var ipAddress = context.Request.HttpContext.Connection.RemoteIpAddress.ToString();
+            var jwtService = context.Request.HttpContext.RequestServices.GetService<IJwtService>();
+            var jwtToken = context.SecurityToken as JwtSecurityToken;
+            if (!await jwtService.IsTokenValid(jwtToken.RawData, ipAddress))
+            {
+                context.Fail("Invalid Token Details.");
+            }
+
+          
+        };
     });
 //builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
 /*builder.Services
     .AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; })*/
-    /*.AddCookie(options =>
-    {
-        options.LoginPath = "/users/GoogleSignIn";
-    })*/
-    /*.AddGoogle(googleOptions =>
-    {
-        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-    });*/
+/*.AddCookie(options =>
+{
+    options.LoginPath = "/users/GoogleSignIn";
+})*/
+/*.AddGoogle(googleOptions =>
+{
+    googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+    googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+});*/
 
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<IJwtService, JwtService>();

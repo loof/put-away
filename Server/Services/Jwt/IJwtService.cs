@@ -12,5 +12,7 @@ public interface IJwtService
     Task<UserLoginResponseDto> GetRefreshTokenAsync(string ipAddress, User user);
 
     JwtSecurityToken GetJwtToken(string expiredToken);
-    
+
+    Task<bool> IsTokenValid(string accessToken, string ipAddress);
+
 }
