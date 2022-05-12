@@ -1,46 +1,81 @@
 ﻿@page "/"
-@using System.Drawing
-@using Size = MudBlazor.Size
+@inject NavigationManager UriHelper
 
 <PageTitle>Items</PageTitle>
 
 <MudText Typo="Typo.h1" GutterBottom="true">Items</MudText>
+<MudFab Style="position: fixed; 
+                       bottom: 25px; 
+                       right: 25px; " EndIcon="@Icons.Material.Filled.Add"   Color="Color.Secondary" Size="Size.Large"/>
+<MudPaper>
 
-<MudPaper Width="700px">
-    <MudList Clickable="true">
 
-        <MudListItem>
-            <MudContainer Style="margin-left: -20px" Class="d-flex align-content-center align-center flex-wrap flex-grow-1 gap-4" Fixed="true">
-                <MudImage Width="100"  Fluid="true" Src="https://www.zooroyal.de/magazin/wp-content/uploads/2021/01/korea-jindo-dog.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
-                <MudText>Hund</MudText>
-            </MudContainer>
-        </MudListItem>
-        <MudListItem>
-            <MudContainer Style="margin-left: -20px" Class="d-flex align-content-center align-center flex-wrap flex-grow-1 gap-4" Fixed="true">
-                <MudImage Width="100"  Fluid="true" Src="https://www.zooroyal.de/magazin/wp-content/uploads/2021/01/korea-jindo-dog.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
-                <MudText>Hund</MudText>
-            </MudContainer>
-        </MudListItem>
-        <MudListItem>
-            <MudContainer Style="margin-left: -20px" Class="d-flex align-content-center align-center flex-wrap flex-grow-1 gap-4" Fixed="true">
-                <MudImage Width="100"  Fluid="true" Src="https://www.zooroyal.de/magazin/wp-content/uploads/2021/01/korea-jindo-dog.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
-                <MudText>Hund</MudText>
-            </MudContainer>
-        </MudListItem>
-        <MudListItem>
-            <MudContainer Style="margin-left: -20px" Class="d-flex align-content-center align-center flex-wrap flex-grow-1 gap-4" Fixed="true">
-                <MudImage Width="100"  Fluid="true" Src="https://www.zooroyal.de/magazin/wp-content/uploads/2021/01/korea-jindo-dog.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
-                <MudText>Hund</MudText>
-            </MudContainer>
-        </MudListItem>
-            <MudListItem>
-                    <MudContainer Style="margin-left: -20px" Class="d-flex align-content-center align-center flex-wrap flex-grow-1 gap-4" Fixed="true">
-                        <MudImage Width="100"  Fluid="true" Src="https://www.zooroyal.de/magazin/wp-content/uploads/2021/01/korea-jindo-dog.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
-                        <MudText Typo="Typo.body1">Hund</MudText>
-                        <MudText Typo="Typo.body2">1000 CHF</MudText>
-                    </MudContainer>
-                </MudListItem>
+    <MudList  Clickable="true">
 
+        <MudListItem OnClick="() => { HandleClick(1); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/keyboard.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+        <MudListItem OnClick="() => { HandleClick(2); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/lampe.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+
+        <MudListItem OnClick="() => { HandleClick(1); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/keyboard.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+        <MudListItem OnClick="() => { HandleClick(2); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/lampe.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+
+        <MudListItem OnClick="() => { HandleClick(1); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/keyboard.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+        <MudListItem OnClick="() => { HandleClick(2); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/lampe.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+
+        <MudListItem OnClick="() => { HandleClick(1); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/keyboard.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
+        <MudListItem OnClick="() => { HandleClick(2); }">
+            <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+                <MudImage Width="100" Fluid="true" Src="/images/lampe.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+                <MudText>Stehlampe</MudText>
+            </MudContainer>
+        </MudListItem>
 
     </MudList>
+
+
 </MudPaper>
+
+
+@code {
+
+
+    private void HandleClick(int itemId)
+    {
+        UriHelper.NavigateTo($"/items/{itemId}");
+    }
+
+}

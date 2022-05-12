@@ -1,19 +1,31 @@
 ﻿@using PutAway.Client.Themes
+@using System.Security.Principal
 @inherits LayoutComponentBase
+@inject NavigationManager MyNavigationManager
 
-<MudThemeProvider Theme="_putAwayTheme"  />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<MudThemeProvider Theme="_putAwayTheme"/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
 <MudLayout>
     <MudAppBar Elevation="0">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+
+        @if (MyNavigationManager.Uri != MyNavigationManager.BaseUri)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => NavigateBack())"/>
+        }
+        else
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())"/>
+        }
+
+
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
         <MudDrawerHeader>
             <MudText Typo="Typo.h6">Put Away</MudText>
         </MudDrawerHeader>
-        <NavMenu />
+        <NavMenu/>
     </MudDrawer>
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-5">
@@ -31,7 +43,12 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    
+    void NavigateBack()
+    {
+        MyNavigationManager.NavigateTo("/");
+    }
+
+
 
 
 }

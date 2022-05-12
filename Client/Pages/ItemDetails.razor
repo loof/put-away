@@ -1,0 +1,24 @@
+﻿@page "/items/{ItemId:int}"
+@using PutAway.Shared.Entities
+@inject NavigationManager NavManager
+
+<PageTitle>Item @ItemId</PageTitle>
+
+<MudText Typo="Typo.h1" GutterBottom="true">Item @ItemId</MudText>
+
+<MudPaper>
+    <MudContainer Class="d-flex align-content-center align-center flex-wrap pa-0 ma-0 gap-4">
+        <MudImage Width="100" Fluid="true" Src="/images/keyboard.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg"/>
+        <MudText>Stehlampe</MudText>
+    </MudContainer>
+</MudPaper>
+
+
+
+
+@code {
+
+    [Parameter]
+    public int ItemId { get; set; }
+
+}
